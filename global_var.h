@@ -9,15 +9,28 @@ extern double sigma_aft[ring_num];
 
 typedef struct DUST_STRUCT{
   double r;
+  double rf;
   double sigma;
   double a_p;
+  double St;//Stokes number
   double m_peb;
+  double h;
+  double d_v;
+  double vr;
 } DUST_STRUCT;
-extern DUST_STRUCT dust[ring_num];
+
+extern DUST_STRUCT dust[ring_num+1];
 
 typedef struct DISK_STRUCT{
   double r;
   double sigma;
+  double h;
+  double temp;
+  double rho;
+  double cs;
+  double visc_mol;
+  double yeta;
+  double yetavk;
 } DISK_STRUCT;
 extern DISK_STRUCT disk[ring_num];
 

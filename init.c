@@ -26,8 +26,9 @@ void opa_init(){// initialize opacity profile
 
 void init(){
   int i;
-  for(i=0;i<ring_num;i++){
-    dust[i].r=rmin+(rmax-rmin)*i*1.0/ring_num;
+  for(i=0;i<ring_num+1;i++){
+    //dust[i].r=rmin+(rmax-rmin)*i*1.0/ring_num;
+    dust[i].rf=rmin*exp(i*1.0/ring_num*log(rmax/rmin));
   }
   if (!(mdot<2e-10 && alpha>8e-4)){
     ITER=1;
@@ -36,10 +37,30 @@ void init(){
   }
   ITER=0;
   for(i=0;i<ring_num;i++){
+    dust[i].r=(dust[i].rf+dust[i+1].rf)/2.;
     disk[i].sigma=Sigma_gas(dust[i].r);
-    printf("r=%e\t sigma_gas=%e\n",dust[i].r,Sigma_gas(dust[i].r));
-    dust[i].sigma=Sigma_gas(dust[i].r)*dust_gas;
-    dust[i].a_p=1.0;
+    disk[i].h=height(dust[i].r);
+    disk[i].temp=temperature(dust[i].r);
+    disk[i].rho=disk[i].sigma/disk[i].h/sqrt(2*M_PI);//density(dust[i].r);
+    disk[i].visc_mol=viscosity(dust[i].r);
+    disk[i].cs=sound_sp(dust[i].r);
+    disk[i].yeta=yeta(dust[i].r);
+    disk[i].yetavk=yeta(dust[i].r)*v_K(dust[i].r);
+
+    printf("r=%e\t sigma_gas=%e\n",dust[i].r,\
+        Sigma_gas(dust[i].r));
+    if(dust[i].r>0. && dust[i].r<199.) \
+      dust[i].sigma=Sigma_gas(dust[i].r)*dust_gas;
+    dust[i].a_p=1e-5;//*pow(dust[i].r,-1.1);
+    dust[i].m_peb=4.*M_PI*dust[i].a_p*dust[i].a_p\
+                  *dust[i].a_p*rho_peb/3.;
+    double St,alpha;
+    St=stokes(dust[i].r,dust[i].a_p);
+    alpha=alpha_func(dust[i].r);
+    dust[i].h=disk[i].h/sqrt(1+St*(1+2*St)/alpha/(1+St));
+    dust[i].St=St;
+    dust[i].vr=v_r(dust[i].r,St);
+    
   }
   
 }

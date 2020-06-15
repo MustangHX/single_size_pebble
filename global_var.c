@@ -1,6 +1,6 @@
 #include "global_var.h"
 
-DUST_STRUCT dust[ring_num];
+DUST_STRUCT dust[ring_num+1];
 DISK_STRUCT disk[ring_num];
 
 double dt_ring[ring_num];

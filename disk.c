@@ -5,11 +5,13 @@
 #include "global_ex.h"
 
 double v_K(double r){
-    return 29.8*100000.0*sqrt(m_star)/sqrt(r);
+    //return 29.8*100000.0*sqrt(m_star)/sqrt(r);
+  return 2e-7/r/sqrt(r)*r*LUNIT;
 }
 
 double w_K(double r){
-    return v_K(r)/(r*LUNIT);
+    //return v_K(r)/(r*LUNIT)
+  return 2e-7/r/sqrt(r);
 }
 
 double alpha_func(double r){
@@ -18,6 +20,7 @@ double alpha_func(double r){
 	  double dr_tran = DRTRAN;
 	  double r_tran = RTRAN;
 		double viscosity=alpha_init;
+    return alpha_init;
     if (fabs(VISCOSITYRATIO-1.0)<0.1) return viscosity;
 		if (r < rmintr) viscosity *=  VISCOSITYRATIO;
 		if ((r >= rmintr) && (r <= rmaxtr)) {
@@ -75,7 +78,10 @@ if (!ITER) {
 	*pow(alpha,-0.2)*pow(G*m_star*MUNIT,0.3)\
 	*pow((1-sqrt(r_star*LUNIT/r))*mdot*MUNIT/TUNIT,0.4)*pow(r,-0.9);
 
-temper_passive=temp0*pow(r/LUNIT,-3.0/7.0);
+//temper_passive=temp0*pow(r/LUNIT,-3.0/7.0);
+temper_passive=temp0*pow(r/LUNIT,-0.5);//match MMSN
+
+
 //if ( (mdot<0e-10 && alpha>20e-4) || r/LUNIT>10.0 \
     || (temper_passive > temper_active && r/LUNIT > 0.1)) 
 return temper_passive;
@@ -97,8 +103,9 @@ alpha = alpha_func(r);
 double siggas;
 if (!ITER) opa=func_line1(r,p_opa_line);
 //printf("alpha=%e\t sig=%e\n",alpha,mdot*MUNIT/TUNIT/3.0/M_PI/(alpha*sound_sp(r)*height(r)));
-  siggas=mdot*MUNIT/TUNIT/3.0/M_PI/(alpha*sound_sp(r)*height(r));
+ // siggas=mdot*MUNIT/TUNIT/3.0/M_PI/(alpha*sound_sp(r)*height(r));
   //printf("r=%e\t siggas=%e\t",r,siggas);
+  siggas=1700*pow(r,-1.5);
   return siggas;
 }
 
@@ -134,13 +141,17 @@ if (!ITER) opa=func_line1(r,p_opa_line);
         dr=0.002;
         r1=rmin*exp(i*1.0/ring_num*log(rmax/rmin));
         r2=rmin*exp((i+1)*1.0/ring_num*log(rmax/rmin));
-        return -1.0*(log(pressure(r1))-log(pressure(r2)))/(log(r1)-log(r2));
-        //return -1.0*(log(pressure(r))-log(pressure(r+dr)))/(log(r)-log(r+dr));
+        //printf("press1=%e\tpress2=%e\tr1=%e\tr2=%e\n",pressure(r1),pressure(r2),r1,r2);
+        //return -1.0*(log(pressure(r1))-log(pressure(r2)))/(log(r1)-log(r2));
+        //printf("press1=%e\tpress2=%e\tr1=%e\tr2=%e\n",pressure(r),pressure(r+dr),r,dr);
+        return -1.0*(log(pressure(r))-log(pressure(r+dr)))/(log(r)-log(r+dr));
 }
 
 double yeta(double r){
 if (!ITER) opa=func_line1(r,p_opa_line);
+    //printf("k_P=%e\t r=%e\n",k_P_func(r),r);
     return k_P_func(r)*(sound_sp(r)/v_K(r))*(sound_sp(r)/v_K(r));
+    //return 0.0022*sqrt(r);
 }
 
 double vt_gas(double r){
