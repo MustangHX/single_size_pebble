@@ -47,7 +47,7 @@ double upwind(double cfl){
   int i;
   double dt,umax=0.,u,u1,u2,qx,r,r1,r2,St,St1,St2,a_p,a_p1,a_p2; //r1 is i-1,r2 is i+1
   double qtemp[ring_num]={0.};
-  double vr_fac=0.2;
+  double vr_fac=1.0;
   for(i=0;i<ring_num-1;i++){
     //printf("vr=%e\t at r=%e\n",v_r(dust[i].r,dust[i].a_p),dust[i].r);
     r=dust[i].r*LUNIT;
@@ -76,6 +76,13 @@ double upwind(double cfl){
     u1=v_r(r1/LUNIT,St1);
     u2=v_r(r2/LUNIT,St2);
 
+    if(TWO_POP>0){
+     u=u*dust[i].f_m+dust[i].vr0*(1.-dust[i].f_m);
+     //printf("i=%d\tu=%e\f_m=t%e\n",i,u,dust[i].f_m);
+     u1=u1*dust[i-1].f_m+dust[i-1].vr0*(1.-dust[i-1].f_m);
+     u2=u2*dust[i+1].f_m+dust[i+1].vr0*(1.-dust[i+1].f_m);
+    }
+
     if (u1>0. && u>=0. && u2>=0.){
   //    qx=(r*u*dust[i].sigma-r1*v_r(r1/LUNIT,a_p1)\
          *dust[i-1].sigma)/(r-r1);
@@ -86,6 +93,7 @@ double upwind(double cfl){
   //    qx=(r2*v_r(r2/LUNIT,a_p2)*dust[i+1].sigma\
          -r*u*dust[i].sigma)/(r2-r);
       qx=(u2*qtemp[i+1]-u*qtemp[i])/(r2-r);
+      //if(qx<0 && r/LUNIT>2. && r/LUNIT < 3. ) printf("qx r=%e\t",r/LUNIT);
     }
     else if (u1>0. && u>0. && u2<0.){
       qx=(u*qtemp[i]-u1*qtemp[i-1])/(r-r1)+(u2*qtemp[i+1])/(r2-r);
@@ -112,6 +120,12 @@ double upwind(double cfl){
   St2=dust[1].St;
   u=v_r(r/LUNIT,St);
   u2=v_r(r2/LUNIT,St2);
+  if(TWO_POP>0){
+    u=u*dust[0].f_m+dust[0].vr0*(1.-dust[0].f_m);
+    u2=u2*dust[1].f_m+dust[1].vr0*(1.-dust[1].f_m);
+  }
+
+          
   qx=(u2*qtemp[1]-0.*u*qtemp[0])/(r2-r);
   if((qtemp[0]-dt*qx)/r>sigdust_floor){
     dust[0].sigma=(qtemp[0]-dt*qx)/r;
@@ -122,6 +136,9 @@ double upwind(double cfl){
   r1=dust[ring_num-2].r*LUNIT;
   St=dust[ring_num-1].St;
   u=v_r(r/LUNIT,St);
+  if(TWO_POP>0){
+    u=u*dust[ring_num-1].f_m+dust[ring_num-1].vr0*(1.-dust[ring_num-1].f_m);
+  }
   qx=u*(0.-qtemp[ring_num-1])/(r-r1);
   if((qtemp[ring_num-1]-dt*qx)/r>sigdust_floor){
     dust[ring_num-1].sigma=(qtemp[ring_num-1]-dt*qx)/r;
@@ -134,6 +151,6 @@ double upwind(double cfl){
 
 
 double van_Leer(double cfl){
-
+  double dt, vr_fac;
   return dt/TUNIT/vr_fac;
 }

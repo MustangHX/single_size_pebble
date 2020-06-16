@@ -9,7 +9,7 @@ double stokes(double r,double a_p){
  double lambda=mean_path(r);
  double v_thermal=sqrt(8*k_B*temperature(r)/M_PI/mu/m_p);
  //printf("r=%e\t rhogas=%e\t meanpath=%e\t vthermal=%e\n",r,rho_gas,lambda,v_thermal);
- if (a_p<2.25*lambda){
+ if (1 || a_p<2.25*lambda){
   // t_stop=rho_peb*a_p/rho_gas/v_thermal;
   return M_PI/2.*rho_peb*a_p/Sigma_gas(r);
  }

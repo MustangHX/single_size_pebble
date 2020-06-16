@@ -51,7 +51,7 @@ void init(){
         Sigma_gas(dust[i].r));
     if(dust[i].r>0. && dust[i].r<199.) \
       dust[i].sigma=Sigma_gas(dust[i].r)*dust_gas;
-    dust[i].a_p=1e-5;//*pow(dust[i].r,-1.1);
+    dust[i].a_p=a_min;//*pow(dust[i].r,-1.1);
     dust[i].m_peb=4.*M_PI*dust[i].a_p*dust[i].a_p\
                   *dust[i].a_p*rho_peb/3.;
     double St,alpha;
@@ -60,6 +60,9 @@ void init(){
     dust[i].h=disk[i].h/sqrt(1+St*(1+2*St)/alpha/(1+St));
     dust[i].St=St;
     dust[i].vr=v_r(dust[i].r,St);
+    dust[i].St0=stokes(dust[i].r,a_min);
+    dust[i].vr=v_r(dust[i].r,dust[i].St0);
+    dust[i].f_m=0.0;
     
   }
   
