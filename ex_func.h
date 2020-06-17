@@ -6,6 +6,7 @@ double v_pp(double argc, double argc2, int argc3);
 double stokes(double argc, double argc2);
 void upwind_size(double argc); 
 void diffusion(double argc); 
+void grow_two_pop(double argc, double argc2); 
 void check();
 void init();
 int drift(double argc,double argc2, double argc3);

@@ -17,6 +17,12 @@ typedef struct DUST_STRUCT{
   double h;
   double d_v;
   double vr;
+  double f_m;
+  double a_frag;
+  double a_drift;
+  double a_df;
+  double St0;
+  double vr0;
 } DUST_STRUCT;
 
 extern DUST_STRUCT dust[ring_num+1];

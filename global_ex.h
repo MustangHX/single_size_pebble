@@ -1,6 +1,7 @@
 #include <math.h>
 #define sigdust_floor 1e-10 //dust density floor
-#define v_frag 100. //in cm/s
+#define v_frag 1000. //in cm/s
+#define a_min 1e-5 // in cm
 #define ratio_st 0.5
 #define rho_peb 1.4
 //#define alpha 0.001
@@ -30,8 +31,14 @@
 #define FRAG_SW 0
 #define DIFF_SW 1 //diffusion
 
+#define TWO_POP 1
+#define FF 0.37  //a_p=FF*amax in frag limited
+#define FD 0.55  //a_p=FD*amax in drift limited
+#define FMD 0.97 //drift limited
+#define FMF 0.75 //frag limited
+
 #define rmax 100.0
-#define rmin 4.0
+#define rmin 1.0
 #define ring_num 200
 #define dt_fix 10.
 #define tlim 1000000. //in yr
