@@ -5,14 +5,14 @@
 #include <stdio.h>
 int main(){
   int i;
-  double tsum=0.,cfl=0.3,dt=dt_fix,outtime=0., tot_mass=0.;
+  double tsum=1000.,tsum0=1000., cfl=0.3,dt=dt_fix,dt_ad,outtime=0., tot_mass=0.;
   char outdustsig[256], outdustsize[256], \
     outdustvr[256], outdustst[256], outmass[256],\
-    dust_frag[256],dust_drift[256], dust_df[256];
-  FILE *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7, *fp8;
+    dust_frag[256],dust_drift[256], dust_df[256], dust_gr[256], tau_gr[256];
+  FILE *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7, *fp8, *fp9, *fp10;
 
   mdot=mdot_init;
-  init();
+  init(tsum);
   check();
   fp1=fopen("rad.txt","w");
   fp2=fopen("gassig.txt","w");
@@ -49,14 +49,17 @@ int main(){
         -dust[i].rf*dust[i].rf)*LUNIT*LUNIT/m_earth;
   }
   fprintf(fp5,"%e\t%e\n",0.,tot_mass);
-
+  int t_count=0;
   while(tsum<tlim){
     mdot=mdot_init;
-    dt=upwind(cfl);
+    dt=tsum0*(exp((t_count+1)*1.0/num_step*log(tlim/tsum0))\
+       -exp(t_count*1.0/num_step*log(tlim/tsum0)));
+    t_count++;
+    dt_ad=upwind(cfl,dt);
     if (TWO_POP>0){
     grow_two_pop(dt,tsum);
     }
-    else upwind_size(dt);
+    else upwind_ND(dt);
     //diffusion(dt);
     //if( ((int)(tsum))%((int)(outp_step))==0){
     if( tsum>=outtime){
@@ -69,6 +72,10 @@ int main(){
       sprintf(dust_frag,"dust_frag%d.txt",(int)outtime);
       sprintf(dust_drift,"dust_drift%d.txt",(int)outtime);
       sprintf(dust_df,"dust_df%d.txt",(int)outtime);
+      sprintf(dust_gr,"dust_gr%d.txt",(int)outtime);
+      sprintf(tau_gr,"tau_gr%d.txt",(int)outtime);
+      
+      
       
       
       
@@ -80,6 +87,10 @@ int main(){
       fp6=fopen(dust_drift,"w");
       fp7=fopen(dust_frag,"w");
       fp8=fopen(dust_df,"w");
+      fp9=fopen(dust_gr,"w");
+      fp10=fopen(tau_gr,"w");
+
+
 
 
 
@@ -91,8 +102,8 @@ int main(){
         fprintf(fp6,"%e\n",dust[i].a_drift);
         fprintf(fp7,"%e\n",dust[i].a_frag);
         fprintf(fp8,"%e\n",dust[i].a_df);
-
-
+        fprintf(fp9,"%e\n",dust[i].a_gr);
+        fprintf(fp10,"%e\n",dust[i].tau_gr);
 
 
       }
@@ -114,6 +125,10 @@ int main(){
       fclose(fp6);
       fclose(fp7);
       fclose(fp8);
+      fclose(fp9);
+      fclose(fp10);
+
+
 
       outtime+=outp_step;
 

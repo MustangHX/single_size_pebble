@@ -24,7 +24,8 @@ void opa_init(){// initialize opacity profile
   line1(p_opa_line);
 }
 
-void init(){
+void init(double tot_t){
+  tot_t*=TUNIT;
   int i;
   for(i=0;i<ring_num+1;i++){
     //dust[i].r=rmin+(rmax-rmin)*i*1.0/ring_num;
@@ -49,11 +50,14 @@ void init(){
 
     printf("r=%e\t sigma_gas=%e\n",dust[i].r,\
         Sigma_gas(dust[i].r));
-    if(dust[i].r>0. && dust[i].r<199.) \
+    if(1 || ( dust[i].r>0. && dust[i].r<199.)) \
       dust[i].sigma=Sigma_gas(dust[i].r)*dust_gas;
-    dust[i].a_p=a_min;//*pow(dust[i].r,-1.1);
+    dust[i].a_p=a_min;//*pow(dust[i].r,-1.57);
+    double tau_grow=1./(dust[i].sigma/disk[i].sigma*w_K(dust[i].r));
+    dust[i].a_gr=a_min*exp(tot_t/tau_grow);
     dust[i].m_peb=4.*M_PI*dust[i].a_p*dust[i].a_p\
                   *dust[i].a_p*rho_peb/3.;
+    dust[i].Nd=dust[i].sigma/dust[i].m_peb;
     double St,alpha;
     St=stokes(dust[i].r,dust[i].a_p);
     alpha=alpha_func(dust[i].r);

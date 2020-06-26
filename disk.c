@@ -80,7 +80,8 @@ if (!ITER) {
 
 //temper_passive=temp0*pow(r/LUNIT,-3.0/7.0);
 temper_passive=temp0*pow(r/LUNIT,-0.5);//match MMSN
-if(r/LUNIT<8.) temper_passive=temp0*pow(8.,-0.5)*pow(r/8./LUNIT,-2);
+//temper_passive=221.*pow(r/LUNIT,-0.5);
+//if(r/LUNIT<8.) temper_passive=temp0*pow(8.,-0.5)*pow(r/8./LUNIT,-2);
 
 //if ( (mdot<0e-10 && alpha>20e-4) || r/LUNIT>10.0 \
     || (temper_passive > temper_active && \
@@ -106,7 +107,8 @@ if (!ITER) opa=func_line1(r,p_opa_line);
 //printf("alpha=%e\t sig=%e\n",alpha,mdot*MUNIT/TUNIT/3.0/M_PI/(alpha*sound_sp(r)*height(r)));
  // siggas=mdot*MUNIT/TUNIT/3.0/M_PI/(alpha*sound_sp(r)*height(r));
   //printf("r=%e\t siggas=%e\t",r,siggas);
-  siggas=1700*pow(r,-1.0);
+  siggas=1700*pow(r,-1.5);
+  //siggas=4.1*pow(r/rc,-1.)*atan(pow(r/rc,10));
   return siggas;
 }
 

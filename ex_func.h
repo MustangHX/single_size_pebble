@@ -1,10 +1,11 @@
 #include "global_var.h"
-double upwind(double argc);
+double upwind(double argc, double argc2);
 double v_r(double argc, double argc2);
 double v_t(double argc, double argc2);
 double v_pp(double argc, double argc2, int argc3);
 double stokes(double argc, double argc2);
 void upwind_size(double argc); 
+void upwind_ND(double argc);
 void diffusion(double argc); 
 void grow_two_pop(double argc, double argc2); 
 void check();

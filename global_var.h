@@ -13,6 +13,7 @@ typedef struct DUST_STRUCT{
   double sigma;
   double a_p;
   double St;//Stokes number
+  double Nd;
   double m_peb;
   double h;
   double d_v;
@@ -21,6 +22,8 @@ typedef struct DUST_STRUCT{
   double a_frag;
   double a_drift;
   double a_df;
+  double a_gr;
+  double tau_gr;
   double St0;
   double vr0;
 } DUST_STRUCT;
