@@ -71,3 +71,44 @@ void init(double tot_t){
   }
   
 }
+
+void Restart(int rnum){
+  double tot_t=rnum*TUNIT;
+  double rad, sig_d, a_p, r;
+  double St, alpha, tau_grow;
+  int i;
+
+  FILE *f_sig, *f_size;
+
+  char dsize[256],dsig[256];
+
+  printf("RESTART=%d\n",rnum);
+  sprintf(dsig,"dust_sigma%d.txt",rnum);
+  sprintf(dsize,"dust_size%d.txt",rnum);
+  f_sig=fopen(dsig,"r");
+  f_size=fopen(dsize,"r");
+
+  for(i=0;i<ring_num;i++){
+    fscanf(f_sig,"%lf",&sig_d);
+    fscanf(f_size,"%lf",&a_p);
+
+    dust[i].sigma=sig_d;
+    dust[i].a_p=a_p;
+    tau_grow=1./(dust[i].sigma/disk[i].sigma*w_K(dust[i].r));
+    dust[i].a_gr=a_min*exp(tot_t/tau_grow);
+
+    dust[i].m_peb=4.*M_PI*dust[i].a_p*dust[i].a_p\
+                  *dust[i].a_p*rho_peb/3.;
+    dust[i].Nd=dust[i].sigma/dust[i].m_peb;
+    
+    St=stokes(dust[i].r,dust[i].a_p);
+    alpha=alpha_func(dust[i].r);
+    dust[i].h=disk[i].h/sqrt(1+St*(1+2*St)/alpha/(1+St));
+    dust[i].St=St;
+    dust[i].vr=v_r(dust[i].r,St);
+    dust[i].St0=stokes(dust[i].r,a_min);
+    dust[i].vr=v_r(dust[i].r,dust[i].St0);
+    dust[i].f_m=0.0;
+  
+  }
+}

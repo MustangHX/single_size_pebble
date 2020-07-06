@@ -6,7 +6,9 @@
 
 void check(){
   // v_pp at 100 au
-  double a_p,r=100,r_in=2.,vr, d_v,v_Brown,d_vr,d_vt,d_vz,v_turb,tgrowth,St,hdust,alpha,m_peb,srcterm;
+  double a_p,r=100,r_in=10.,vr, d_v,v_Brown,\
+         d_vr,d_vt,d_vz,v_turb,tgrowth,St,\
+         hdust,alpha,m_peb,srcterm,N_d;
   int i,Nsize=300;
   FILE *fp,*fp0,*fp1,*fp2,*fp3,*fp4,*fp5,*fp6,*fp7,*fp8, *fp9;
   
@@ -77,9 +79,9 @@ void check(){
   fclose(fp8);
   fclose(fp9);
 
-  double dt=1000*TUNIT,tsum=0.0, d2g=1e-2,a_pmin=1e-5,t_int=2e5;
-  fp1=fopen("fwd_eu_1000yr.txt","w");
-  fp2=fopen("rk2_1000yr.txt","w");
+  double dt=1e2*TUNIT,tsum=0.0, d2g=1e-2,a_pmin=1e-5,t_int=1e4;
+  fp1=fopen("fwd_eu_100yr.txt","w");
+  fp2=fopen("rk2_100yr.txt","w");
   a_p=a_pmin;
   m_peb=4./3.*M_PI*a_p*a_p*a_p*rho_peb;
   while (tsum<=t_int*TUNIT){
@@ -88,16 +90,21 @@ void check(){
     alpha=alpha_func(r_in);
     hdust=height(r_in)/sqrt(1+St*(1+2*St)\
         /alpha/(1+St));
-    srcterm=2.*sqrt(M_PI)*a_p*a_p*d_v*\
+    /*srcterm=2.*sqrt(M_PI)*a_p*a_p*d_v*\
             Sigma_gas(r_in)*d2g/hdust;
-    m_peb+=srcterm*dt;
+    m_peb+=srcterm*dt;*/
+    N_d=Sigma_gas(r_in)/m_peb;
+    srcterm=-2*sqrt(M_PI)*a_p*a_p*N_d*N_d*d_v/hdust;
+    N_d+=srcterm*dt;
+    m_peb=Sigma_gas(r_in)/N_d;
     a_p=cbrt(3*m_peb/4/M_PI/rho_peb);
+    if(N_d<0.) printf("t=%e\tN_d=%e\tm_peb=%e\ta_p=%e\n",tsum,N_d,m_peb,a_p);
     tsum+=dt;
-    fprintf(fp1,"%e\n",a_p);
+    fprintf(fp1,"%e\n",N_d);
   }
   fclose(fp1); 
   
-  tsum=0.0;
+/*  tsum=0.0;
   a_p=a_pmin;
   m_peb=4./3.*M_PI*a_p*a_p*a_p*rho_peb;
   double srcterm0,srcterm1;
@@ -130,5 +137,5 @@ void check(){
     tsum+=dt;
     fprintf(fp2,"%e\n",a_p);
   }
-  fclose(fp2);
+  fclose(fp2);*/
 }

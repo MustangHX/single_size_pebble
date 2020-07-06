@@ -9,7 +9,7 @@ void upwind_ND(double dt0){
   double dt=dt0*TUNIT,umax=0.,u,u01,u1,u2, uf, uf1, qx,r,r01,r1,r2,\
 rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2, N_d; //r01 is i-1,r1 is i+1
   double d_v, alpha, hdust, srcterm, grow_fac=1.0;
-  double qtemp[ring_num]={0.};
+  double qtemp[ring_num]={0.}, aptemp[ring_num]={0.};
   double vr_fac=1.0;
   for(i=0;i<ring_num-1;i++){
     //printf("vr=%e\t at r=%e\n",v_r(dust[i].r,dust[i].a_p),dust[i].r);
@@ -23,11 +23,12 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2, N_d; //r01 is i-1,r1
   //dt=cfl/umax;
   for(i=0;i<ring_num;i++){
     qtemp[i]=dust[i].r*LUNIT*dust[i].Nd;
+    aptemp[i]=dust[i].a_p;
   }
   for(i=1;i<ring_num-1;i++){
     r=dust[i].r*LUNIT;
-    r01=dust[i-1].r*LUNIT;
-    r1=dust[i+1].r*LUNIT;
+    //r01=dust[i-1].r*LUNIT;
+    //r1=dust[i+1].r*LUNIT;
     rf=dust[i].rf*LUNIT;
     rf1=dust[i+1].rf*LUNIT;
     
@@ -36,15 +37,18 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2, N_d; //r01 is i-1,r1
     a_p01=dust[i-1].a_p;
     a_p1=dust[i+1].a_p;
     St=dust[i].St;
-    St01=dust[i-1].St;
-    St1=dust[i+1].St;
-    St1=stokes(r1/LUNIT,a_p);
+    //St01=dust[i-1].St;
+    //St1=dust[i+1].St;
+    //St1=stokes(r1/LUNIT,a_p);
+    //St=stokes(r/LUNIT,a_p);
+
+
     //if(fabs(St1-dust[i+1].St)/St1>0.1) printf("St1_0=%e\tSt1=%e\tr1=%e\ta_p=%e\n",dust[i+1].St,St1,r1/LUNIT,a_p);
     Stf=stokes(rf/LUNIT,(a_p+a_p01)/2.);
     Stf1=stokes(rf1/LUNIT,(a_p+a_p1)/2.);
-    u=v_r(r/LUNIT,St);
+    //u=v_r(r/LUNIT,St);
     uf=v_r(rf/LUNIT,Stf);
-    u1=v_r(r1/LUNIT,St1);
+    //u1=v_r(r1/LUNIT,St1);
     uf1=v_r(rf1/LUNIT,Stf1);
 
         if (uf>=0. && uf1>=0.){
@@ -59,8 +63,10 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2, N_d; //r01 is i-1,r1
     else {//(uf<0.0 && uf1 > 0.0){
       qx=(uf*qtemp[i]-uf1*qtemp[i])/(rf1-rf);
     }
-
-    dust[i].Nd=(qtemp[i]+dt*qx)/r;
+    if((qtemp[i]+dt*qx)/r>ND_floor){
+       dust[i].Nd=(qtemp[i]+dt*qx)/r;
+    }
+    else dust[i].Nd=ND_floor;
   //src term
 
     d_v=v_pp(r/LUNIT,a_p,0);
@@ -69,10 +75,35 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2, N_d; //r01 is i-1,r1
     srcterm=-2*sqrt(M_PI)*a_p*a_p*N_d*N_d*d_v/hdust;
     if (a_p<0.) printf("src%e\ta_p%e\tN_d%e\td_v%e\thdust%e\tr%e\n",srcterm,a_p,N_d,d_v,hdust,r/LUNIT);
     grow_fac=1.0;
-    if(log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
+    if(v_frag>0. && log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
+
+   //rk2 integrator
+/*
+    double srcterm0, srcterm1;
+    double rk2=1.0;
+    double y0=a_p,y10,y1,Nd_t,Nd_t1,d_v10,hdust10;
+    d_v=v_pp(r/LUNIT,a_p,0);
+    alpha=alpha_func(r/LUNIT);
+    hdust=disk[i].h/sqrt(1.+St*(1+2.*St)/alpha/(1.+St));
+    srcterm0=-2*sqrt(M_PI)*y0*y0*N_d*N_d*d_v/hdust;
+    grow_fac=1.0;
+    if(v_frag>0. && log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
+    Nd_t=N_d+grow_fac*srcterm0*dt*rk2;
+    y10=cbrt(3*dust[i].sigma/Nd_t/4/M_PI/rho_peb);
+    d_v10=v_pp(r/LUNIT,y10,0);
+    St=stokes(r/LUNIT,y10);
+    hdust10=disk[i].h/sqrt(1.+St*(1+2.*St)/alpha/(1.+St));
+    srcterm1=-2*sqrt(M_PI)*y10*y10*Nd_t*Nd_t*d_v10/hdust10;
+    double grow_fac1=1.0;
+    if(v_frag>0. && log(v_frag/d_v10)/log(5.)<1.) grow_fac1=log(v_frag/d_v10)/log(5.);
+    Nd_t1=dust[i].Nd+grow_fac*srcterm0*dt*(1.-1./2./rk2)+grow_fac1*1./2./rk2*srcterm1*dt;
+   */  
+  //end of rk2    
+
     dust[i].Nd+=grow_fac*srcterm*dt;
     dust[i].m_peb=dust[i].sigma/dust[i].Nd;
     dust[i].a_p=cbrt(3*dust[i].m_peb/4/M_PI/rho_peb);
+    //St=stokes(r/LUNIT,a_p);
     dust[i].St=stokes(r/LUNIT,a_p);
     dust[i].h=disk[i].h/sqrt(1+St*(1+2*St)/alpha/(1+St));
     dust[i].d_v=d_v;
@@ -92,20 +123,29 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2, N_d; //r01 is i-1,r1
   u=v_r(r/LUNIT,St);
   u1=v_r(r1/LUNIT,St01);
 
-  a_p=dust[0].a_p;
-  a_p01=dust[0].a_p;
-  a_p1=dust[1].a_p;
+  a_p=aptemp[0];
+  a_p01=aptemp[0];
+  a_p1=aptemp[1];
 
+  St=stokes(r/LUNIT,a_p);
   Stf=stokes(rf/LUNIT,(a_p+a_p01)/2.);
   Stf1=stokes(rf1/LUNIT,(a_p+a_p1)/2.);
-
+ 
 
   uf=v_r(rf/LUNIT,Stf);
   uf1=v_r(rf1/LUNIT,Stf1);
 
-
-  qx=(0.*uf*qtemp[0]-uf1*qtemp[1])/(rf1-rf);
-  dust[0].Nd=(qtemp[0]+dt*qx)/r;
+  if(uf<0. && uf1<0.){
+    qx=(1.*uf*qtemp[0]-uf1*qtemp[1])/(rf1-rf);
+  }
+  else if(uf>0. && uf1>0.){
+    qx=(uf*0.-uf1*qtemp[0])/(rf1-rf);
+  }
+  
+  if((qtemp[0]+dt*qx)/r>ND_floor){
+    dust[0].Nd=(qtemp[0]+dt*qx)/r;
+  } 
+  else dust[0].Nd=ND_floor;
   //src term
 
   d_v=v_pp(r/LUNIT,a_p,0);
@@ -115,10 +155,11 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2, N_d; //r01 is i-1,r1
   if (a_p<0.) printf("src%e\ta_p%e\tN_d%e\td_v%e\thdust%e\tr%e\n",srcterm,a_p,N_d,d_v,hdust,r/LUNIT);
   grow_fac=1.0;
   if(v_frag>0. && log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
-  dust[0].Nd+=grow_fac*srcterm*dt;
-  dust[0].m_peb=dust[i].sigma/dust[i].Nd;
+  dust[0].Nd+=0.*grow_fac*srcterm*dt;
+  dust[0].m_peb=dust[0].sigma/dust[0].Nd;
   dust[0].a_p=cbrt(3*dust[0].m_peb/4/M_PI/rho_peb);
-  dust[0].St=stokes(r/LUNIT,a_p);
+  St=stokes(r/LUNIT,dust[0].a_p);
+  dust[0].St=St;
   dust[0].h=disk[0].h/sqrt(1+St*(1+2*St)/alpha/(1+St));
   dust[0].d_v=d_v;
   dust[0].vr=v_r(r/LUNIT,St);
@@ -128,11 +169,12 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2, N_d; //r01 is i-1,r1
   r01=dust[ring_num-2].r*LUNIT;
   rf=dust[ring_num-1].rf*LUNIT;
   rf1=dust[ring_num].rf*LUNIT;
-  St=dust[ring_num-1].St;
 
-  a_p=dust[ring_num-1].a_p;
-  a_p01=dust[ring_num-2].a_p;
-  a_p1=dust[ring_num-1].a_p;
+  a_p=aptemp[ring_num-1];
+  a_p01=aptemp[ring_num-2];
+  a_p1=aptemp[ring_num-1];
+  St=stokes(r/LUNIT,a_p);
+
 
   Stf=stokes(rf/LUNIT,(a_p+a_p01)/2.);
   Stf1=stokes(rf1/LUNIT,(a_p+a_p1)/2.);
@@ -142,8 +184,13 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2, N_d; //r01 is i-1,r1
 
 
   qx=uf*(qtemp[ring_num-1]-0.)/(rf1-rf);
-  dust[ring_num-1].Nd=(qtemp[ring_num-1]+dt*qx)/r;
+  if((qtemp[ring_num-1]+dt*qx)/r>ND_floor){
+    dust[ring_num-1].Nd=(qtemp[ring_num-1]+dt*qx)/r;
+  } 
+  else dust[ring_num-1].Nd=ND_floor;
   //src term
+  //fwd euler
+
 
   d_v=v_pp(r/LUNIT,a_p,0);
   alpha=alpha_func(r/LUNIT);
@@ -152,11 +199,39 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2, N_d; //r01 is i-1,r1
   if (a_p<0.) printf("src%e\ta_p%e\tN_d%e\td_v%e\thdust%e\tr%e\n",srcterm,a_p,N_d,d_v,hdust,r/LUNIT);
   grow_fac=1.0;
   if(v_frag>0. && log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
+
+  //end of fwd euler
+
+   //rk2 integrator
+  /*
+  double srcterm0, srcterm1;
+  double rk2=1.0;
+  double y0=a_p,y10,y1,Nd_t,Nd_t1,d_v10,hdust10;
+  d_v=v_pp(r/LUNIT,a_p,0);
+  alpha=alpha_func(r/LUNIT);
+  hdust=disk[ring_num-1].h/sqrt(1.+St*(1+2.*St)/alpha/(1.+St));
+  srcterm0=-2*sqrt(M_PI)*y0*y0*N_d*N_d*d_v/hdust;
+  grow_fac=1.0;
+  if(v_frag>0. && log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
+  Nd_t=N_d+grow_fac*srcterm0*dt*rk2;
+  y10=cbrt(3*dust[ring_num-1].sigma/Nd_t/4/M_PI/rho_peb);
+  d_v10=v_pp(r/LUNIT,y10,0);
+  St=stokes(r/LUNIT,y10);
+  hdust10=disk[ring_num-1].h/sqrt(1.+St*(1+2.*St)/alpha/(1.+St));
+  srcterm1=-2*sqrt(M_PI)*y10*y10*Nd_t*Nd_t*d_v10/hdust10;
+  double grow_fac1=1.0;
+  if(v_frag>0. && log(v_frag/d_v10)/log(5.)<1.) grow_fac1=log(v_frag/d_v10)/log(5.);
+  Nd_t1=dust[ring_num-1].Nd+grow_fac*srcterm0*dt*(1.-1./2./rk2)+grow_fac1*1./2./rk2*srcterm1*dt;
+   */
+    //end of rk2    
+
+
+
   dust[ring_num-1].Nd+=grow_fac*srcterm*dt;
   dust[ring_num-1].m_peb=dust[ring_num-1].sigma/dust[ring_num-1].Nd;
   dust[ring_num-1].a_p=cbrt(3*dust[ring_num-1].m_peb/4/M_PI/rho_peb);
   St=stokes(r/LUNIT,dust[ring_num].a_p);
-  dust[ring_num-1].St=St;
+  dust[ring_num-1].St=St;//okes(r/LUNIT,dust[ring_num].a_p);
   dust[ring_num-1].h=disk[ring_num-1].h/sqrt(1+St*(1+2*St)/alpha/(1+St));
   dust[ring_num-1].d_v=d_v;
   dust[ring_num-1].vr=v_r(r/LUNIT,St);
@@ -302,7 +377,7 @@ void upwind_size(double dt0){
   srcterm=srcfac*2.*sqrt(M_PI)*a_p*a_p*d_v*dust[i].sigma/dust[i].h;//4*M_PI*a_p*a_p*d_v*rho_dust/srcfac;
 
   grow_fac=1.0;
-  if(log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
+  if(v_frag>0. && log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
     //printf("grow_fac=%e\t, d_v=%e\n",grow_fac,d_v);
   dust[0].m_peb+=srcterm*dt;
   dust[0].a_p=cbrt(3*dust[0].m_peb/4/M_PI/rho_peb);
@@ -339,11 +414,12 @@ void upwind_size(double dt0){
   //dust[ring_num-1].m_peb=(qtemp[ring_num-1]-dt*qx);
 
   grow_fac=1.0;
-  if(log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
+  if(v_frag>0. && log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
     //printf("grow_fac=%e\t, d_v=%e\n",grow_fac,d_v);
   dust[ring_num-1].m_peb+=srcterm*dt;
   dust[ring_num-1].a_p=cbrt(3*dust[ring_num-1].m_peb/4/M_PI/rho_peb);
-  dust[ring_num-1].St=stokes(r/LUNIT,a_p);
+  St=stokes(r/LUNIT,a_p);
+  dust[ring_num-1].St=St;
   dust[ring_num-1].h=disk[ring_num-1].h/sqrt(1+St*(1+2*St)/alpha/(1+St));
   dust[ring_num-1].d_v=d_v;
 

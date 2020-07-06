@@ -4,19 +4,21 @@
 #include "math.h"
 #include <stdio.h>
 double stokes(double r,double a_p){
- double t_stop;
+ double t_stop,tau;
  double rho_gas=density(r);
  double lambda=mean_path(r);
  double v_thermal=sqrt(8*k_B*temperature(r)/M_PI/mu/m_p);
  //printf("r=%e\t rhogas=%e\t meanpath=%e\t vthermal=%e\n",r,rho_gas,lambda,v_thermal);
  if (a_p<2.25*lambda){
   // t_stop=rho_peb*a_p/rho_gas/v_thermal;
-  return M_PI/2.*rho_peb*a_p/Sigma_gas(r);
+  tau = M_PI/2.*rho_peb*a_p/Sigma_gas(r);
  }
  else{
   // t_stop = 4.0*rho_peb*a_p*a_p/9.0/rho_gas/v_thermal/lambda;
-  return M_PI/2.*rho_peb*a_p/Sigma_gas(r)*4*a_p/9/lambda;
+  tau = M_PI/2.*rho_peb*a_p/Sigma_gas(r)*4*a_p/9/lambda;
  }
+  if (tau>1.) return 1.;
+  else return tau;
 
  //return w_K(r)*t_stop;
 }

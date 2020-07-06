@@ -1,4 +1,5 @@
 #include "global_var.h"
+void Restart(int argc);
 double upwind(double argc, double argc2);
 double v_r(double argc, double argc2);
 double v_t(double argc, double argc2);
@@ -10,6 +11,8 @@ void diffusion(double argc);
 void grow_two_pop(double argc, double argc2); 
 void check();
 void init();
+double advec_grow(double argc, double argc1, int argc2);
+
 int drift(double argc,double argc2, double argc3);
 double drag_group(double argc,double argc2);
 double w_K(double argc);
@@ -26,7 +29,6 @@ void Init2();
 void frag();
 void stokes_size();
 void tau_unity();
-void Restart(int argc);
 void grow_1();
 void grow_3();
 double grow_3b();
