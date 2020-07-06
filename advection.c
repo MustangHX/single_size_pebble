@@ -203,7 +203,7 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2; //r01 is i-1,r1 is i
     dust[0].a_p=cbrt(3*dust[0].m_peb/4/M_PI/rho_peb);
     St=stokes(r/LUNIT,a_p);
     dust[0].St=stokes(r/LUNIT,a_p);
-    dust[0].h=disk[i].h/sqrt(1+St*(1+2*St)/alpha/(1+St));
+    dust[0].h=disk[0].h/sqrt(1+St*(1+2*St)/alpha/(1+St));
     dust[0].d_v=d_v;
     dust[0].vr=v_r(r/LUNIT,St);
   }
@@ -211,14 +211,14 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2; //r01 is i-1,r1 is i
     N_d=Nd_arr[0];
     d_v=v_pp(r/LUNIT,a_p,0);
     alpha=alpha_func(r/LUNIT);
-    hdust=disk[i].h/sqrt(1.+St*(1+2.*St)/alpha/(1.+St));
+    hdust=disk[0].h/sqrt(1.+St*(1+2.*St)/alpha/(1.+St));
     srcterm=-2*sqrt(M_PI)*a_p*a_p*N_d*N_d*d_v/hdust;
     if (a_p<0.) printf("src%e\ta_p%e\tN_d%e\td_v%e\thdust%e\tr%e\n",srcterm,a_p,N_d,d_v,hdust,r/LUNIT);
     grow_fac=1.0;
     if(log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
     d_Ndgr=grow_fac*srcterm;
     dust[0].Nd+=d_Ndgr*dt;
-    dust[0].m_peb=dust[i].sigma/dust[i].Nd;
+    dust[0].m_peb=dust[0].sigma/dust[0].Nd;
     dust[0].a_p=cbrt(3*dust[0].m_peb/4/M_PI/rho_peb);
     St=stokes(r/LUNIT,a_p);
     dust[0].St=stokes(r/LUNIT,a_p);
@@ -267,7 +267,7 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2; //r01 is i-1,r1 is i
     dust[ring_num-1].a_p=cbrt(3*dust[ring_num-1].m_peb/4/M_PI/rho_peb);
     St=stokes(r/LUNIT,a_p);
     dust[ring_num-1].St=stokes(r/LUNIT,a_p);
-    dust[ring_num-1].h=disk[i].h/sqrt(1+St*(1+2*St)/alpha/(1+St));
+    dust[ring_num-1].h=disk[ring_num-1].h/sqrt(1+St*(1+2*St)/alpha/(1+St));
     dust[ring_num-1].d_v=d_v;
     dust[ring_num-1].vr=v_r(r/LUNIT,St);
   }
@@ -282,7 +282,7 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2; //r01 is i-1,r1 is i
     if(log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
     d_Ndgr=grow_fac*srcterm;
     dust[ring_num-1].Nd+=d_Ndgr*dt;
-    dust[ring_num-1].m_peb=dust[i].sigma/dust[i].Nd;
+    dust[ring_num-1].m_peb=dust[ring_num-1].sigma/dust[ring_num-1].Nd;
     dust[ring_num-1].a_p=cbrt(3*dust[ring_num-1].m_peb/4/M_PI/rho_peb);
     St=stokes(r/LUNIT,a_p);
     dust[ring_num-1].St=stokes(r/LUNIT,a_p);
