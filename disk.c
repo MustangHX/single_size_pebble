@@ -66,6 +66,30 @@ double alpha_func(double r){
 }
 
 double temperature (double r){
+
+if(readin>0){
+  FILE *f_rad, *f_T;
+  double rad_in[N_in]={0.},temp_in[N_in]={0.};
+  double rad,Tgas,r;
+  f_rad=fopen("rad_in.txt","r");
+  f_T=fopen("temp_in.txt","r");
+  int i=0,imax;
+  while(rad<dust[ring_num-1].r && i<N_in){
+    fscanf(f_rad,"%lf",&rad);
+    fscanf(f_T,"%lf",&Tgas);
+    rad_in[i]=rad;
+    temp_in[i]=Tgas;
+    printf("read in rad%e\tTgas%e\tidx%d\n",\
+      rad,Tgas,i);
+    i++;
+    }
+  imax=i;
+  for(i=0;i<imax;i++){
+    if(rad_in[i]>r) break;
+  }
+  return temp_in[i-1]+(temp_in[i]-temp_in[i-1])/(rad_in[i]\
+         -rad_in[i-1])*(r-rad_in[i-1]);
+  }
 alpha = alpha_func(r);
 r=r*LUNIT;
 double temper_active,temper_passive;

@@ -6,17 +6,21 @@
 
 double advec_grow(double cfl, double dt0, int GROW){
   int i;
-  double dt,umax=0.,u,u01,u1,u2, uf, uf1, qx,r,r01,r1,r2,\
+  double dt,umax=0.,umaxad=0.,u,u01,u1,u2, uf, uf1, qx,r,r01,r1,r2,\
 rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2; //r01 is i-1,r1 is i+1
   double sigtemp[ring_num]={0.},Ndtemp[ring_num]={0.},\
          Nd_arr[ring_num]={0.}, aptemp[ring_num]={0.};
   double d_sig,d_Nd,d_Ndgr;
   double srcterm, srcterm0, srcterm1, d_v, hdust, grow_fac, N_d;
-  
+  int i_ad, i_gr; 
   for(i=0;i<ring_num;i++){
     sigtemp[i]=dust[i].r*LUNIT*dust[i].sigma;
     Ndtemp[i]=dust[i].r*LUNIT*dust[i].Nd;
     Nd_arr[i]=dust[i].Nd;
+    if(Nd_arr[i]<0.){
+      printf("i%d\tN_d%e\ta_p%e\tm_peb%e\tsigma%e\n",i,Nd_arr[i],dust[i].a_p,dust[i].m_peb,dust[i].sigma);
+      return -1.;
+    }
     aptemp[i]=dust[i].a_p;
   }
 
@@ -26,10 +30,12 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2; //r01 is i-1,r1 is i
     rf1=dust[i+1].rf*LUNIT;
 
     a_p=aptemp[i];
-    a_p01=aptemp[i-1];
+    int i_in=i-1;
+    if (i_in<0) i_in=0;
+    a_p01=aptemp[i_in];
     a_p1=aptemp[i+1];
 
-    St=stokes(r/LUNIT,a_p);
+  /*  St=stokes(r/LUNIT,a_p);
     Stf=stokes(rf/LUNIT,(a_p+a_p01)/2.);
     Stf1=stokes(rf1/LUNIT,(a_p+a_p1)/2.);
     
@@ -39,12 +45,49 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2; //r01 is i-1,r1 is i
     
 
     d_Nd=(uf*Ndtemp[i]-uf1*Ndtemp[i+1])/(rf1-rf);
+    d_sig=(uf*sigtemp[i]-uf1*sigtemp[i+1])/(rf1-rf);
+
+    */
     
-    
-    if (!(GROW>0) && fabs(d_Nd)/Ndtemp[i]>umax){
-      umax=fabs(d_Nd)/Ndtemp[i];
+    //direct copy
+    St=stokes(r/LUNIT,a_p);
+    Stf=stokes(rf/LUNIT,(a_p+a_p01)/2.);
+    Stf1=stokes(rf1/LUNIT,(a_p+a_p1)/2.);
+
+    u=v_r(r/LUNIT,St);
+    uf=v_r(rf/LUNIT,Stf);
+    uf1=v_r(rf1/LUNIT,Stf1);
+
+    if(TWO_POP>0){
+     uf=uf*dust[i].f_m+dust[i].vr0*(1.-dust[i].f_m);
+     uf1=uf1*dust[i+1].f_m+dust[i+1].vr0*(1.-dust[i+1].f_m);
     }
 
+    if (uf>=0. && uf1>=0.){
+      d_sig=(uf*sigtemp[i-1]-uf1*sigtemp[i])/(rf1-rf);
+      d_Nd=(uf*Ndtemp[i-1]-uf1*Ndtemp[i])/(rf1-rf);
+
+    }
+    else if (uf<0. && uf1<0.){
+      d_sig=(uf*sigtemp[i]-uf1*sigtemp[i+1])/(rf1-rf);
+      d_Nd=(uf*Ndtemp[i]-uf1*Ndtemp[i+1])/(rf1-rf);
+    }
+    else if (uf > 0.0 && uf1 < 0.0){
+      d_sig=(uf*sigtemp[i-1]-uf1*sigtemp[i+1])/(rf1-rf);
+      d_Nd=(uf*Ndtemp[i-1]-uf1*Ndtemp[i+1])/(rf1-rf);
+    }
+    else {   //(uf<0.0 && uf1 > 0.0){
+      d_sig=(uf*sigtemp[i]-uf1*sigtemp[i])/(rf1-rf);
+      d_Nd=(uf*Ndtemp[i]-uf1*Ndtemp[i])/(rf1-rf);
+    }
+    //end of direct copy
+
+    if (fabs(d_sig)/sigtemp[i]>umaxad){
+      umaxad=fabs(d_sig)/sigtemp[i];
+      i_ad=i;
+    }
+
+/*
     if(GROW>0){
       N_d=Nd_arr[i];
       d_v=v_pp(r/LUNIT,a_p,0);
@@ -55,19 +98,37 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2; //r01 is i-1,r1 is i
       grow_fac=1.0;
       if(log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
       d_Ndgr=grow_fac*srcterm;
-      if(fabs(0.*d_Nd/r+d_Ndgr)>umax){
-        umax=fabs(0.*d_Nd/r+d_Ndgr)/Nd_arr[i];
+      if(fabs((1.*d_Nd/r+d_Ndgr)/Nd_arr[i])>umax){
+        umax=fabs(1.*d_Nd/r+d_Ndgr)/Nd_arr[i];
+        i_gr=i;
       }
     }
+  */
+  //direct copy
+    if(GROW>0){
+      N_d=Nd_arr[i];
+      d_v=v_pp(r/LUNIT,a_p,0);
+      alpha=alpha_func(r/LUNIT);
+      hdust=disk[i].h/sqrt(1.+St*(1+2.*St)/alpha/(1.+St));
+      srcterm=-2*sqrt(M_PI)*a_p*a_p*N_d*N_d*d_v/hdust;
+      grow_fac=1.0;
+      if(log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
+      d_Ndgr=grow_fac*srcterm;
+//end of direct copy
 
+      if(fabs((1.*d_Nd/r+d_Ndgr)/Nd_arr[i])>umax){
+        umax=fabs(1.*d_Nd/r+d_Ndgr)/Nd_arr[i];
+        i_gr=i;
+      }
+
+      
+    } 
+
+    if (umax<umaxad) umax=umaxad;
   }
   dt=cfl/umax;
   //printf("dt=%e\n",dt/TUNIT);
-  dt=dt0*TUNIT;
-  for(i=0;i<ring_num;i++){
-    sigtemp[i]=dust[i].r*LUNIT*dust[i].sigma;
-    Ndtemp[i]=dust[i].r*LUNIT*dust[i].Nd;
-  }
+  //dt=dt0*TUNIT;
   
   for(i=1;i<ring_num-1;i++){
     r=dust[i].r*LUNIT;
@@ -140,11 +201,16 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2; //r01 is i-1,r1 is i
       alpha=alpha_func(r/LUNIT);
       hdust=disk[i].h/sqrt(1.+St*(1+2.*St)/alpha/(1.+St));
       srcterm=-2*sqrt(M_PI)*a_p*a_p*N_d*N_d*d_v/hdust;
-      if (a_p<0.) printf("src%e\ta_p%e\tN_d%e\td_v%e\thdust%e\tr%e\n",srcterm,a_p,N_d,d_v,hdust,r/LUNIT);
       grow_fac=1.0;
       if(log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
       d_Ndgr=grow_fac*srcterm;
       dust[i].Nd+=grow_fac*srcterm*dt;
+      if (dust[i].Nd<0.) {
+        printf("d_Nd/r%e\td_Nddt/r%e\td_Ndgr%e\td_Ndgrdt%e\tN_d%e\td_v%e\tr%e\t",d_Nd/r,d_Nd*dt/r,d_Ndgr,d_Ndgr*dt,N_d,d_v,r/LUNIT);
+        printf("i_ad=%d\ti_gr=%d\tumax=%e\n",i_ad,i_gr,umax);
+        return -1.;
+      } 
+
       dust[i].m_peb=dust[i].sigma/dust[i].Nd;
       dust[i].a_p=cbrt(3*dust[i].m_peb/4/M_PI/rho_peb);
           St=stokes(r/LUNIT,a_p);
@@ -199,7 +265,7 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2; //r01 is i-1,r1 is i
   else dust[0].Nd=ND_floor;
   
   if(!(GROW>0)){
-    dust[0].m_peb=dust[i].sigma/dust[i].Nd;
+    dust[0].m_peb=dust[0].sigma/dust[0].Nd;
     dust[0].a_p=cbrt(3*dust[0].m_peb/4/M_PI/rho_peb);
     St=stokes(r/LUNIT,a_p);
     dust[0].St=stokes(r/LUNIT,a_p);
@@ -213,11 +279,15 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2; //r01 is i-1,r1 is i
     alpha=alpha_func(r/LUNIT);
     hdust=disk[0].h/sqrt(1.+St*(1+2.*St)/alpha/(1.+St));
     srcterm=-2*sqrt(M_PI)*a_p*a_p*N_d*N_d*d_v/hdust;
-    if (a_p<0.) printf("src%e\ta_p%e\tN_d%e\td_v%e\thdust%e\tr%e\n",srcterm,a_p,N_d,d_v,hdust,r/LUNIT);
     grow_fac=1.0;
     if(log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
     d_Ndgr=grow_fac*srcterm;
     dust[0].Nd+=d_Ndgr*dt;
+       if (dust[0].Nd<0.) {
+        printf("d_Nd/r%e\td_Nddt/r%e\td_Ndgr%e\td_Ndgrdt%e\tN_d%e\td_v%e\tr%e\t",d_Nd/r,d_Nd*dt/r,d_Ndgr,d_Ndgr*dt,N_d,d_v,r/LUNIT);
+        printf("i_ad=%d\ti_gr=%d\tumax=%e\n",i_ad,i_gr,umax);
+        return -1.;
+      }
     dust[0].m_peb=dust[0].sigma/dust[0].Nd;
     dust[0].a_p=cbrt(3*dust[0].m_peb/4/M_PI/rho_peb);
     St=stokes(r/LUNIT,a_p);
@@ -263,7 +333,7 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2; //r01 is i-1,r1 is i
   else dust[ring_num-1].Nd=ND_floor;
   
   if(!(GROW>0)){
-    dust[ring_num-1].m_peb=dust[i].sigma/dust[i].Nd;
+    dust[ring_num-1].m_peb=dust[ring_num-1].sigma/dust[ring_num-1].Nd;
     dust[ring_num-1].a_p=cbrt(3*dust[ring_num-1].m_peb/4/M_PI/rho_peb);
     St=stokes(r/LUNIT,a_p);
     dust[ring_num-1].St=stokes(r/LUNIT,a_p);
@@ -277,11 +347,15 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2; //r01 is i-1,r1 is i
     alpha=alpha_func(r/LUNIT);
     hdust=disk[ring_num-1].h/sqrt(1.+St*(1+2.*St)/alpha/(1.+St));
     srcterm=-2*sqrt(M_PI)*a_p*a_p*N_d*N_d*d_v/hdust;
-    if (a_p<0.) printf("src%e\ta_p%e\tN_d%e\td_v%e\thdust%e\tr%e\n",srcterm,a_p,N_d,d_v,hdust,r/LUNIT);
     grow_fac=1.0;
     if(log(v_frag/d_v)/log(5.)<1.) grow_fac=log(v_frag/d_v)/log(5.);
     d_Ndgr=grow_fac*srcterm;
     dust[ring_num-1].Nd+=d_Ndgr*dt;
+       if (dust[ring_num-1].Nd<0.) {
+        printf("d_Nd/r%e\td_Nddt/r%e\td_Ndgr%e\td_Ndgrdt%e\tN_d%e\td_v%e\tr%e\t",d_Nd/r,d_Nd*dt/r,d_Ndgr,d_Ndgr*dt,N_d,d_v,r/LUNIT);
+        printf("i_ad=%d\ti_gr=%d\tumax=%e\n",i_ad,i_gr,umax);
+        return -1.;
+      }
     dust[ring_num-1].m_peb=dust[ring_num-1].sigma/dust[ring_num-1].Nd;
     dust[ring_num-1].a_p=cbrt(3*dust[ring_num-1].m_peb/4/M_PI/rho_peb);
     St=stokes(r/LUNIT,a_p);
@@ -291,7 +365,7 @@ rf,rf1,rf01,St,St1,St2, St01,Stf,Stf1,a_p,a_p01,a_p1, a_p2; //r01 is i-1,r1 is i
     dust[ring_num-1].vr=v_r(r/LUNIT,St);
   }
 
-  return dt/TUNIT;
+  return cfl/umax/TUNIT;//dt/TUNIT;
 }
 
 

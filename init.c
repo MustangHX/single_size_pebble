@@ -31,6 +31,9 @@ void init(double tot_t){
     //dust[i].r=rmin+(rmax-rmin)*i*1.0/ring_num;
     dust[i].rf=rmin*exp(i*1.0/ring_num*log(rmax/rmin));
   }
+  for(i=0;i<ring_num;i++){
+    dust[i].r=(dust[i].rf+dust[i+1].rf)/2.;
+  }
   if (!(mdot<2e-10 && alpha>8e-4)){
     ITER=1;
     printf("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
@@ -38,7 +41,6 @@ void init(double tot_t){
   }
   ITER=0;
   for(i=0;i<ring_num;i++){
-    dust[i].r=(dust[i].rf+dust[i+1].rf)/2.;
     disk[i].sigma=Sigma_gas(dust[i].r);
     disk[i].h=height(dust[i].r);
     disk[i].temp=temperature(dust[i].r);

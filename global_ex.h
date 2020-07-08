@@ -46,6 +46,10 @@
 #define dt_fix 10.0
 #define tlim 1001000. //in yr
 #define outp_step 1000.
+
+#define readin 0
+#define N_in 300
+
 #define peb_num 10
 #define v_coag_max 500.0 //cm/s
 #define v_tran_width 500.0 // cm/s

@@ -8,7 +8,7 @@
 #include <stdio.h>
 int main(int argc, char *argv[]){
   int i;
-  double tsum=100.,tsum0=100., cfl=0.3,dt=dt_fix,dt_ad,outtime=0., tot_mass=0.;
+  double tsum=0.,tsum0=0., cfl=0.3,dt=dt_fix,dt_ad,dt_out, outtime=0., tot_mass=0.;
   char outdustsig[256], outdustsize[256], \
     outdustvr[256], outdustst[256], outmass[256],\
     dust_frag[256],dust_drift[256], dust_df[256], dust_gr[256], tau_gr[256];
@@ -42,7 +42,7 @@ int main(int argc, char *argv[]){
   if(Restarting == 1){
     Restart(NbRestart);
     tsum=NbRestart*1.0;
-    outtime=NbRestart*1.0;
+    outtime=NbRestart*1.0+outp_step;
   }
 
 
@@ -84,14 +84,17 @@ int main(int argc, char *argv[]){
     t_count++;
     //dt_ad=upwind(cfl,dt);
     dt_ad=advec_grow(cfl,dt,1);
+    if(dt_ad<0.) break;
+    dt=dt_ad;
     if (TWO_POP>0){
     grow_two_pop(dt,tsum);
     }
     //else upwind_ND(dt);
     //if(tsum>1e4) 
-    //diffusion(dt);
+    diffusion(dt);
     //if( ((int)(tsum))%((int)(outp_step))==0){
     if( tsum>=outtime){
+      printf("tsum-outtime=%e\t",tsum-outtime);
       printf("time=%e\t dt=%e\n",tsum,dt_ad);
       printf("out put\n");
       sprintf(outdustsig,"dust_sigma%d.txt",(int)outtime);
@@ -161,8 +164,10 @@ int main(int argc, char *argv[]){
       fclose(fp10);
       }
 
-
-      outtime+=outp_step;
+      if (dt<1.) dt_out=1.;
+      if(outp_step>dt) dt_out=outp_step;
+      else dt_out=dt;
+      outtime+=dt_out;
 
     }
     
